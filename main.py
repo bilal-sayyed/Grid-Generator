@@ -10,7 +10,7 @@ from match3_generator import (
 )
 
 # Set working directory explicitly (optional)
-os.chdir('C:\\Users\\GS2330\\PycharmProjects\\9by9demo')
+#os.chdir('C:\\Users\\GS2330\\PycharmProjects\\9by9demo')
 
 # FastAPI app definition
 app = FastAPI()
