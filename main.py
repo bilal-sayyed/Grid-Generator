@@ -1,48 +1,45 @@
 import os
-import random
-import time
+from fastapi import FastAPI, Query, HTTPException
+from match3_generator import generate_new_grid_html, load_grid_from_json, generate_grid_html_from_existing
 from grid_db import init_db
-from fastapi import FastAPI
-from match3_generator import (
-    generate_new_grid_html,              # For new random grid
-    load_grid_from_json,                 # Load saved .json
-    generate_grid_html_from_existing     # Render existing grid
-)
 
-# Set working directory explicitly (optional)
-#os.chdir('C:\\Users\\GS2330\\PycharmProjects\\9by9demo')
-
-# FastAPI app definition
 app = FastAPI()
+
+
+# Initialize DB on startup
+@app.on_event("startup")
+def startup_event():
+    init_db()
+
 
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
-# CLI main logic, separate from the FastAPI app
-def cli_main():
-    init_db()  # Ensure DB and table are ready
 
-    choice = input("Type 'new' to generate new grid or 'load' to load from JSON: ").strip().lower()
+@app.get("/generate_grid")
+def generate_grid(normal_tile_count: int = Query(40, ge=1, le=81), style: str = Query("auto")):
+    """
+    Generate a new grid.
+    - normal_tile_count: number of normal tiles (1-81)
+    - style: one of "auto", "vertical", "horizontal", "diagonal"
+    """
+    valid_styles = {"auto", "vertical", "horizontal", "diagonal"}
+    if style not in valid_styles:
+        raise HTTPException(status_code=400, detail=f"Invalid style. Choose one of {valid_styles}")
 
-    if choice == "new":
-        try:
-            user_input = int(input("Enter number of normal tiles (1-81): "))
-            if 1 <= user_input <= 81:
-                generate_new_grid_html(normal_tile_count=user_input)
-            else:
-                print("❌ Please enter a number between 1 and 81.")
-        except ValueError:
-            print("❌ Invalid input. Please enter a number.")
-    elif choice == "load":
-        try:
-            grid = load_grid_from_json()
-            generate_grid_html_from_existing(grid)
-        except FileNotFoundError:
-            print("❌ grid_layout.json not found. Please generate a grid first.")
-    else:
-        print("❌ Invalid input. Type 'new' or 'load'.")
+    html = generate_new_grid_html(normal_tile_count=normal_tile_count, style=style, save_files=False)
+    return {"html": html}
 
-# This block is only for command-line execution, not when imported by uvicorn
-if __name__ == "__main__":
-    cli_main()
+
+@app.get("/load_grid")
+def load_latest_grid():
+    """
+    Load latest grid from JSON and return HTML.
+    """
+    grid = load_grid_from_json()
+    if not grid:
+        raise HTTPException(status_code=404, detail="No saved grid found.")
+
+    html = generate_grid_html_from_existing(grid, save_file=False)
+    return {"html": html}
