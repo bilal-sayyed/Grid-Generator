@@ -45,3 +45,5 @@ def load_latest_grid():
 
     html = generate_grid_html_from_existing(grid, save_file=False)
     return {"html": html}
+
+

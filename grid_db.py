@@ -1,61 +1,47 @@
-import sqlite3
-import os
+import mysql.connector
 import json
-from hashlib import md5
-from datetime import datetime
+import os
 
+DB_HOST = os.getenv("MYSQLHOST", "your-host")
+DB_USER = os.getenv("MYSQLUSER", "your-user")
+DB_PASSWORD = os.getenv("MYSQLPASSWORD", "your-password")
+DB_NAME = os.getenv("MYSQLDATABASE", "your-database")
+DB_PORT = int(os.getenv("MYSQLPORT", "3306"))
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "grids.db")
+def get_connection():
+    return mysql.connector.connect(
+        host=DB_HOST,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME,
+        port=DB_PORT
+    )
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS grids (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT,
-            hash TEXT UNIQUE,
-            timestamp TEXT,
-            json TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-def hash_grid(grid):
-    flat = ''.join([''.join(row) for row in grid])
-    return md5(flat.encode()).hexdigest()
-
-def is_duplicate(grid_hash):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT filename FROM grids WHERE hash = ?", (grid_hash,))
-    result = c.fetchone()
-    conn.close()
-    return result[0] if result else None
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS grids (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                filename VARCHAR(255),
+                grid LONGTEXT
+            )
+        ''')
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
 def save_grid_to_db(filename, grid):
-    grid_hash = hash_grid(grid)
-    duplicate = is_duplicate(grid_hash)
-    if duplicate:
-        print(f"❌ Duplicate detected!")
-        print(f"🔁 Tried to save: {filename}")
-        print(f"📁 Already exists as: {duplicate}")
-        return False
-
-
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-        INSERT INTO grids (filename, hash, timestamp, json)
-        VALUES (?, ?, ?, ?)
-    """, (
-        filename,
-        grid_hash,
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        json.dumps(grid)
-    ))
-    conn.commit()
-    conn.close()
-    print(f"✅ Grid saved to DB: {filename}")
-    return True
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        grid_json = json.dumps(grid)
+        cursor.execute('''
+            INSERT INTO grids (filename, grid) VALUES (%s, %s)
+        ''', (filename, grid_json))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
