@@ -2,14 +2,16 @@ import os
 from fastapi import FastAPI, Query, HTTPException
 from match3_generator import generate_new_grid_html, load_grid_from_json, generate_grid_html_from_existing
 from grid_db import init_db
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()  # runs at startup
+    yield       # waits here until app shutdown
+    # (Optional) Cleanup code here
 
+app = FastAPI(lifespan=lifespan)
 
-# Initialize DB on startup
-@app.on_event("startup")
-def startup_event():
-    init_db()
 
 
 @app.get("/")
