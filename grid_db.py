@@ -1,14 +1,26 @@
-import mysql.connector
+from dotenv import load_dotenv
+load_dotenv()
+
 import json
 import os
+import mysql.connector
 from urllib.parse import urlparse
 
-url = urlparse(os.getenv("mysql://root:QRPdZNXyflqGGlgkXQUnkiKdUuUfXFIW@mysql.railway.internal:3306/railway"))
 
+# Get the URL as a string
+mysql_url = os.getenv("MYSQL_URL")
+
+if not mysql_url:
+    raise ValueError("mysql://root:QRPdZNXyflqGGlgkXQUnkiKdUuUfXFIW@mysql.railway.internal:3306/railway environment variable not set.")
+
+# Parse it
+url = urlparse(mysql_url)
+
+# Extract connection details
 DB_HOST = url.hostname
 DB_USER = url.username
 DB_PASSWORD = url.password
-DB_NAME = url.path[1:]  # Remove leading "/"
+DB_NAME = url.path.lstrip("/")
 DB_PORT = url.port or 3306
 
 def get_connection():
@@ -19,6 +31,7 @@ def get_connection():
         database=DB_NAME,
         port=DB_PORT
     )
+
 
 def init_db():
     conn = get_connection()
