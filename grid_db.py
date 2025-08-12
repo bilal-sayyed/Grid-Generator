@@ -6,6 +6,8 @@ import os
 import mysql.connector
 from urllib.parse import urlparse
 
+# Debug print to check the environment variable at runtime
+print("DEBUG - MYSQL_URL =", os.getenv("MYSQL_URL"))
 
 # Get the URL as a string
 mysql_url = os.getenv("MYSQL_URL")
