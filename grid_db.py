@@ -1,12 +1,15 @@
 import mysql.connector
 import json
 import os
+from urllib.parse import urlparse
 
-DB_HOST = os.getenv("MYSQLHOST", "your-host")
-DB_USER = os.getenv("MYSQLUSER", "your-user")
-DB_PASSWORD = os.getenv("MYSQLPASSWORD", "your-password")
-DB_NAME = os.getenv("MYSQLDATABASE", "your-database")
-DB_PORT = int(os.getenv("MYSQLPORT", "3306"))
+url = urlparse(os.getenv("mysql://root:QRPdZNXyflqGGlgkXQUnkiKdUuUfXFIW@mysql.railway.internal:3306/railway"))
+
+DB_HOST = url.hostname
+DB_USER = url.username
+DB_PASSWORD = url.password
+DB_NAME = url.path[1:]  # Remove leading "/"
+DB_PORT = url.port or 3306
 
 def get_connection():
     return mysql.connector.connect(
