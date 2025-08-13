@@ -13,7 +13,7 @@ print("DEBUG - MYSQL_URL =", os.getenv("MYSQL_URL"))
 mysql_url = os.getenv("MYSQL_URL")
 
 if not mysql_url:
-    raise ValueError("mysql://root:QRPdZNXyflqGGlgkXQUnkiKdUuUfXFIW@mysql.railway.internal:3306/railway environment variable not set.")
+    raise ValueError("${{ MySQL.MYSQL_URL }} environment variable not set.")
 
 # Parse it
 url = urlparse(mysql_url)
